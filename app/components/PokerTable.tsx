@@ -3,6 +3,9 @@ import type { GameTransport } from "../transport/types";
 import { SeatView } from "./SeatView";
 import { CommunityCards } from "./CommunityCards";
 import { ActionBar } from "./ActionBar";
+import { ChipMotionLayer } from "./poker/ChipMotionLayer";
+import { CardMotionLayer } from "./poker/CardMotionLayer";
+import { usePokerAnimationEvents } from "../poker/usePokerAnimationEvents";
 
 type Props = {
   snapshot: GameSnapshot;
@@ -25,6 +28,7 @@ const SEAT_POSITIONS: { top: string; left: string }[] = [
 ];
 
 export function PokerTable({ snapshot, privateSnapshot, transport, onExit }: Props) {
+  const { events, dismiss } = usePokerAnimationEvents(snapshot);
   const heroId = transport.playerId;
   const heroSeat = snapshot.seats.find((s) => s.playerId === heroId);
   const heroLegal = heroId ? (snapshot.legalActionsByPlayerId[heroId] ?? []) : [];
@@ -101,6 +105,10 @@ export function PokerTable({ snapshot, privateSnapshot, transport, onExit }: Pro
             position={SEAT_POSITIONS[seat.seatIndex] ?? SEAT_POSITIONS[0]}
           />
         ))}
+
+        {/* Animation overlays — absolute, pointer-events: none, UI-only */}
+        <CardMotionLayer events={events} onDone={dismiss} />
+        <ChipMotionLayer events={events} onDone={dismiss} />
       </div>
 
       {isHeroTurn && heroId && (
