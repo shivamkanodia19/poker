@@ -8,9 +8,10 @@ type Props = {
   bigBlind: number;
   potTotal: number;
   onAction: (intent: ActionIntent) => void;
+  lastAction?: string;
 };
 
-export function ActionBar({ legal, playerId, bigBlind, potTotal, onAction }: Props) {
+export function ActionBar({ legal, playerId, bigBlind, potTotal, onAction, lastAction }: Props) {
   const [betInput, setBetInput] = useState<number | null>(null);
 
   const fold = legal.find((l) => l.type === "fold");
@@ -40,6 +41,7 @@ export function ActionBar({ legal, playerId, bigBlind, potTotal, onAction }: Pro
 
   return (
     <div className="action-bar">
+      {lastAction && <div className="action-history">{lastAction}</div>}
       {sizing && (
         <div className="action-bar__sizing">
           <div className="action-bar__pot-sizes">
@@ -79,11 +81,18 @@ export function ActionBar({ legal, playerId, bigBlind, potTotal, onAction }: Pro
             Check
           </button>
         )}
-        {call && (
-          <button className="btn btn--call" onClick={() => dispatch("call", call.minAmount)}>
-            Call {formatChips(call.minAmount ?? 0)}
-          </button>
-        )}
+        {call && (() => {
+          const callAmt = call.minAmount ?? 0;
+          const potOdds = potTotal + callAmt > 0
+            ? Math.round((callAmt / (potTotal + callAmt)) * 100)
+            : 0;
+          return (
+            <button className="btn btn--call" onClick={() => dispatch("call", callAmt)}>
+              Call {formatChips(callAmt)}
+              {potOdds > 0 && <span style={{ fontSize: "0.7em", opacity: 0.75, marginLeft: 4 }}>({potOdds}%)</span>}
+            </button>
+          );
+        })()}
         {bet && (
           <button className="btn btn--bet" onClick={() => dispatch("bet", defaultBet)}>
             Bet {formatChips(defaultBet)}

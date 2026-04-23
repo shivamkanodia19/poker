@@ -54,7 +54,7 @@ export function Home({ onStart }: Props) {
             <span className="mode-card__icon">🌐</span>
             <span className="mode-card__title">Multiplayer</span>
             <span className="mode-card__desc">Play with friends online</span>
-            <span className="mode-card__badge">Framework ready</span>
+            <span className="mode-card__badge">Coming Soon</span>
           </button>
         </div>
       )}

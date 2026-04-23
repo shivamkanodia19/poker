@@ -12,11 +12,12 @@ type Props = {
   privateSnapshot: PlayerPrivateSnapshot | null;
   transport: GameTransport;
   onExit: () => void;
+  lastAction?: string;
 };
 
 /**
  * Seat positions on an oval table (percentage-based).
- * Supports 2-6 seats.  Seat 0 is always the hero (bottom-center).
+ * Seat 0 is always the hero (bottom-center).
  */
 const SEAT_POSITIONS: { top: string; left: string }[] = [
   { top: "78%", left: "50%" },  // 0 hero
@@ -27,7 +28,21 @@ const SEAT_POSITIONS: { top: string; left: string }[] = [
   { top: "55%", left: "12%" },  // 5
 ];
 
-export function PokerTable({ snapshot, privateSnapshot, transport, onExit }: Props) {
+/** Positional labels relative to dealer button */
+const POS_LABELS_6 = ["BTN", "SB", "BB", "UTG", "HJ", "CO"];
+const POS_LABELS_5 = ["BTN", "SB", "BB", "UTG", "CO"];
+const POS_LABELS_4 = ["BTN", "SB", "BB", "UTG"];
+const POS_LABELS_3 = ["BTN", "SB", "BB"];
+const POS_LABELS_2 = ["BTN", "BB"];
+
+function getPositionLabel(seatIndex: number, dealerSeat: number, totalSeats: number): string {
+  const table = [POS_LABELS_2, POS_LABELS_3, POS_LABELS_4, POS_LABELS_5, POS_LABELS_6];
+  const labels = table[Math.max(0, Math.min(totalSeats - 2, 4))];
+  const offset = (seatIndex - dealerSeat + totalSeats) % totalSeats;
+  return labels[offset] ?? "";
+}
+
+export function PokerTable({ snapshot, privateSnapshot, transport, onExit, lastAction }: Props) {
   const { events, dismiss } = usePokerAnimationEvents(snapshot);
   const heroId = transport.playerId;
   const heroSeat = snapshot.seats.find((s) => s.playerId === heroId);
@@ -42,14 +57,17 @@ export function PokerTable({ snapshot, privateSnapshot, transport, onExit }: Pro
     return `${seat?.displayName ?? p.playerId} wins $${p.amount.toLocaleString()}`;
   });
 
+  const activeSeatCount = snapshot.seats.filter((s) => s.status !== "empty" && s.status !== "busted").length;
+
   return (
     <div className="poker-table-screen">
       <header className="table-header">
+        <span className="table-header__game">FELT</span>
         <span className="table-header__blinds">
-          ${snapshot.smallBlind}/${snapshot.bigBlind}
+          ${snapshot.smallBlind} / ${snapshot.bigBlind}
         </span>
         <button className="btn btn--exit" onClick={onExit}>
-          Leave Table
+          Leave
         </button>
       </header>
 
@@ -103,6 +121,11 @@ export function PokerTable({ snapshot, privateSnapshot, transport, onExit }: Pro
             }
             isHero={seat.playerId === heroId}
             position={SEAT_POSITIONS[seat.seatIndex] ?? SEAT_POSITIONS[0]}
+            positionLabel={
+              snapshot.dealerSeat != null
+                ? getPositionLabel(seat.seatIndex, snapshot.dealerSeat, activeSeatCount)
+                : undefined
+            }
           />
         ))}
 
@@ -118,14 +141,20 @@ export function PokerTable({ snapshot, privateSnapshot, transport, onExit }: Pro
           bigBlind={snapshot.bigBlind}
           potTotal={snapshot.potTotal}
           onAction={(intent) => transport.submitAction(intent)}
+          lastAction={lastAction}
         />
       )}
 
-      {!isHeroTurn && heroSeat && snapshot.phase !== "waiting" && snapshot.phase !== "handComplete" && (
-        <div className="waiting-indicator">
-          Waiting for other players…
-        </div>
-      )}
+      {!isHeroTurn && heroSeat && snapshot.phase !== "waiting" && snapshot.phase !== "handComplete" && (() => {
+        const activeName = snapshot.activeSeat != null
+          ? snapshot.seats.find(s => s.seatIndex === snapshot.activeSeat)?.displayName
+          : null;
+        return (
+          <div className="waiting-indicator">
+            {activeName ? `Waiting for ${activeName}…` : "Waiting for other players…"}
+          </div>
+        );
+      })()}
     </div>
   );
 }

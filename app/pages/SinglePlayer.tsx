@@ -41,6 +41,8 @@ export function SinglePlayer({ displayName, buyIn, botCount, onExit }: Props) {
     );
   }
 
+  const lastAction = infoLog.length > 0 ? infoLog[infoLog.length - 1].message : undefined;
+
   return (
     <div className="game-screen">
       <PokerTable
@@ -48,6 +50,7 @@ export function SinglePlayer({ displayName, buyIn, botCount, onExit }: Props) {
         privateSnapshot={privateSnapshot}
         transport={transport}
         onExit={onExit}
+        lastAction={lastAction}
       />
       {infoLog.length > 0 && (
         <div className="info-log">
